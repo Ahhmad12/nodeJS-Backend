@@ -21,4 +21,18 @@ const uploadOnCloudinary = async (localFilePath) => {
   }
 };
 
-export { uploadOnCloudinary };
+const deleleImageOnCloudinary = async (oldFilePath) => {
+  try {
+    if (!oldFilePath) {
+      throw new Error("Invalid old file path");
+    }
+    const publicId = oldFilePath.split("/").pop().split(".")[0];
+    if (!publicId) {
+      throw new Error("Unable to extract public ID from file path");
+    }
+    await cloudinary.uploader.destroy(publicId);
+  } catch (error) {
+    console.log("Error when deleting the file from Cloudinary:", error);
+  }
+};
+export { uploadOnCloudinary, deleleImageOnCloudinary };
