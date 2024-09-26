@@ -286,7 +286,7 @@ const updateAccountHandler = asyncHandler(async (req, res) => {
 });
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
-  const avatarLocalPath = req.files?.avatar[0]?.path;
+  const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) {
     throw new ApiError(409, "Avatar file is missing");
@@ -316,8 +316,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
-  const coverLocalPath = req.files?.coverImage?.[0].path;
-
+  const coverLocalPath = req.file?.path;
   if (!coverLocalPath) {
     throw new ApiError(409, "Cover Image file is missing");
   }

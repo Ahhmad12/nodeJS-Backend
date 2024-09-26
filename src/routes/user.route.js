@@ -47,26 +47,11 @@ router.route("/watchHistory").get(verifyJWT, getUserWatchHistory);
 // update user account
 router.route("/changePassword").post(verifyJWT, changeCurrentPassword);
 router.route("/updateUser").put(verifyJWT, updateAccountHandler);
-router.route("/updateAvatar").patch(
-  verifyJWT,
-  upload.fields([
-    {
-      name: "avatar",
-      maxCount: 1,
-    },
-  ]),
-  updateUserAvatar
-);
-
-router.route("/updateCoverImage").patch(
-  verifyJWT,
-  upload.fields([
-    {
-      name: "coverImage",
-      maxCount: 1,
-    },
-  ]),
-  updateUserCoverImage
-);
+router
+  .route("/updateAvatar")
+  .patch(verifyJWT, upload.single("avatar"), updateUserAvatar);
+router
+  .route("/updateCoverImage")
+  .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 
 export default router;
