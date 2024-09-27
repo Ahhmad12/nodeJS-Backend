@@ -11,6 +11,9 @@ import {
   updateUserCoverImage,
   getUserChannelDetail,
   getUserWatchHistory,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
 } from "../controllers/user.controller.js";
 import { upload } from "../middlewares/multer.middleware.js";
 import { verifyJWT } from "../middlewares/auth.middleware.js";
@@ -54,4 +57,8 @@ router
   .route("/updateCoverImage")
   .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 
+// forgot password
+router.route("/forgotPassword").post(forgotPassword);
+router.route("/verifyOtp").post(verifyOtp);
+router.route("/resetPassword").post(resetPassword);
 export default router;

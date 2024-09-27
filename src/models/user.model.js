@@ -37,6 +37,14 @@ const userSchema = new Schema(
         ref: "Video",
       },
     ],
+    authOtp: {
+      type: String,
+      default: null,
+    },
+    resetPasswordToken: {
+      type: String,
+      default: null,
+    },
     password: {
       type: String,
       required: [true, "Password is required"],

@@ -8,6 +8,8 @@ import {
 import { ApiResponse } from "../utilis/apiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
+import { generateOTP, generateUniqueHexString } from "../utilis/shared.js";
+import { emailOtp } from "../utilis/email.service.js";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -83,7 +85,7 @@ const registerUser = asyncHandler(async (req, res) => {
   });
 
   const createdUser = await User.findById(user?._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken -authOtp -resetPasswordToken"
   );
 
   if (!createdUser) {
@@ -128,7 +130,7 @@ const loginUser = asyncHandler(async (req, res) => {
   );
 
   const loggedInUser = await User.findById(user._id).select(
-    "-password -refreshToken"
+    "-password -refreshToken -authOtp -resetPasswordToken"
   );
 
   const option = {
@@ -148,6 +150,83 @@ const loginUser = asyncHandler(async (req, res) => {
         true
       )
     );
+});
+
+const forgotPassword = asyncHandler(async (req, res) => {
+  const { username, email } = req.body;
+  if (!username && !email) {
+    throw new ApiError(409, "username or email is required");
+  }
+  const user = await User.findOne({
+    $or: [{ username: username }, { email: email }],
+  });
+
+  if (!user) {
+    throw new ApiError(404, "User not found");
+  }
+  const otp = await generateOTP();
+
+  await emailOtp(user, otp);
+  await User.findByIdAndUpdate(
+    user._id,
+    {
+      $set: {
+        authOtp: otp,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, [], "Otp is sent to your email"));
+});
+
+const verifyOtp = asyncHandler(async (req, res) => {
+  const { authOtp } = req?.body;
+  const user = await User.findOne({ authOtp });
+
+  if (!user) {
+    throw new ApiError(409, "Otp is invalid");
+  }
+  const resetPasswordToken = await generateUniqueHexString();
+  await User.findByIdAndUpdate(
+    user._id,
+    {
+      $set: {
+        resetPasswordToken: resetPasswordToken,
+        authOtp: null,
+      },
+    },
+    { new: true }
+  ).select("-password");
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        resetPasswordToken,
+        "use this token to change your password"
+      )
+    );
+});
+
+const resetPassword = asyncHandler(async (req, res) => {
+  const { newPassword, resetPasswordToken } = req?.body;
+  const user = await User.findOne({ resetPasswordToken });
+
+  if (!user) {
+    throw new ApiError(409, "Reset Password Token is invalid");
+  }
+
+  user.password = newPassword;
+  user.resetPasswordToken = null;
+  await user.save({ validateBeforeSave: false });
+
+  return res
+    .status(200)
+    .json(new ApiResponse(200, {}, "Password changed successfully", true));
 });
 
 const logout = asyncHandler(async (req, res) => {
@@ -317,6 +396,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
   const coverLocalPath = req.file?.path;
+
   if (!coverLocalPath) {
     throw new ApiError(409, "Cover Image file is missing");
   }
@@ -491,4 +571,7 @@ export {
   updateUserCoverImage,
   getUserChannelDetail,
   getUserWatchHistory,
+  forgotPassword,
+  verifyOtp,
+  resetPassword,
 };
